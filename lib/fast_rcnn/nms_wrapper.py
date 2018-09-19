@@ -5,23 +5,23 @@ pure_python_nms = False
 try:
     from lib.utils.gpu_nms import gpu_nms
     from ..utils.cython_nms import nms as cython_nms
-    from lib.nms.cpu_nms import cpu_nms, cpu_soft_nms
+    from lib.nms.cpu_nms import cpu_nms
 except ImportError:
     pure_python_nms = True
 
 
 #from lib.nms.gpu_nms import gpu_nms
 
-from lib.nms.cpu_nms import cpu_nms, cpu_soft_nms
+from lib.nms.cpu_nms import cpu_nms
 
-def soft_nms(dets, sigma=0.5, Nt=0.3, threshold=0.001, method=1):
-
-    keep = cpu_soft_nms(np.ascontiguousarray(dets, dtype=np.float32),
-                        np.float32(sigma), np.float32(Nt),
-                        np.float32(threshold),
-                        np.uint8(method))
-    return keep
-
+# def soft_nms(dets, sigma=0.5, Nt=0.3, threshold=0.001, method=1):
+#
+#     keep = cpu_soft_nms(np.ascontiguousarray(dets, dtype=np.float32),
+#                         np.float32(sigma), np.float32(Nt),
+#                         np.float32(threshold),
+#                         np.uint8(method))
+#     return keep
+#
 
 def nms(dets, thresh):
     if dets.shape[0] == 0:
@@ -33,7 +33,6 @@ def nms(dets, thresh):
         return gpu_nms(dets, thresh, device_id=cfg.GPU_ID)
     else:
         return cython_nms(dets, thresh)
-
 
 def py_cpu_nms(dets, thresh):
     x1 = dets[:, 0]
