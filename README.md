@@ -1,0 +1,2 @@
+# function_detection_ctpn_v1
+文字识别,不区分手写打印体的数学题检测
