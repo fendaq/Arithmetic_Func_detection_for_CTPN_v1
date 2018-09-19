@@ -84,64 +84,64 @@ def ctpn(sess, net, image_name):
 
 
     textdetector = TextDetector()
+    # 得到是resize图像后的bbox
     text_proposals, scores, boxes = textdetector.detect(boxes, scores[:, np.newaxis], img_resized.shape[:2])
     draw_boxes(img_resized, image_name, boxes, scale)
 
-    resized_bbox, scores = resize_bbox(boxes, scale)
+    # 原图像的绝对bbox位置
+    original_bbox, scores = resize_bbox(boxes, scale)
 
-    is_evaluate = True
-    if is_evaluate:
-        image_id = image_name.split('/')[-1]
-        image_id = image_id.split('.')[0]
+
+    image_id = image_name.split('/')[-1]
+    image_id = image_id.split('.')[0]
+
+    is_evaluate_bbox = True
+    if is_evaluate_bbox:
         test_label_dir = './data/test_xml'
         p = ParseXml(os.path.join(test_label_dir, image_id+'.xml'), rect=True)
-        img_name, class_list, bbox_list = p.get_bbox_class()
+        img_name, class_list, g_bbox_list = p.get_bbox_class()
 
-        recall = evaluate_signal_bbox(resized_bbox, bbox_list, 0.7)
+        recall = evaluate_signal_bbox(original_bbox, g_bbox_list, 0.7)
         print('recall', recall)
-    # img_re = img
-    # for i in range(np.shape(resized_bbox)[0]):
-    #     # print(np.shape(boxes))
-    #     cv2.rectangle(img_re, (resized_bbox[i][0], resized_bbox[i][1]),
-    #                   (resized_bbox[i][2], resized_bbox[i][3]), (0, 0, 255), 1)
-    #
-    # for i in range(len(bbox_list)):
-    #     # print(np.shape(boxes))
-    #     cv2.rectangle(img_re, (bbox_list[i][0], bbox_list[i][1]),
-    #                   (bbox_list[i][2], bbox_list[i][3]), (255, 0, 0), 1)
-    # cv2.imshow('333', img_re)
-    # cv2.waitKey()
+        res = [recall]
 
+        img_re = img
+        for i in range(np.shape(original_bbox)[0]):
+            cv2.rectangle(img_re, (original_bbox[i][0], original_bbox[i][1]),
+                          (original_bbox[i][2], original_bbox[i][3]), (0, 255, 0), 1)
 
-    # if is_evaluate:
-    #     image_id = image_name.split('/')[-1]
-    #     image_id = image_id.split('.')[0]
-    #     test_label_dir = './data/test_label'
-    #     g_bbox = []
-    #     with open(os.path.join(test_label_dir,image_id+'.txt'), 'r') as f:
-    #         lines = f.readlines()
-    #         for line in lines:
-    #             _, x1, y1, x2, y2 = line.split()
-    #             # print(_, x1, y1, x2, y2)
-    #             g_bbox.append([int(x1), int(y1), int(x2), int(y2)])
-    #
-    #     precision, recall = evaluate_signal_proposal(text_proposals, g_bbox)
-    #     print('precision', precision, 'recall', recall)
-    # img_re = img
-    # for i in range(np.shape(np.array(g_bbox))[0]):
-    #     # print(np.shape(boxes))
-    #     cv2.rectangle(img_re, (g_bbox[i][0], g_bbox[i][1]),
-    #                   (g_bbox[i][2], g_bbox[i][3]), (255, 0, 0), 1)
-    # cv2.imshow('333', img_re)
-    # cv2.waitKey()
-    # assert o, 'dwa'
+        for i in range(len(g_bbox_list)):
+            cv2.rectangle(img_re, (g_bbox_list[i][0], g_bbox_list[i][1]),
+                          (g_bbox_list[i][2], g_bbox_list[i][3]), (255, 0, 0), 1)
+        # cv2.imshow('333', img_re)
+        cv2.imwrite(os.path.join('./data/g_p_bbox', 'bb_'+image_id + '.jpg'), img_re)
+        # cv2.waitKey()
 
+    is_evaluate_proposal = False
+    if is_evaluate_proposal:
+        test_label_dir = './data/test_label'
+        g_bbox = []
+        with open(os.path.join(test_label_dir, image_id+'.txt'), 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                _, x1, y1, x2, y2 = line.split()
+                # print(_, x1, y1, x2, y2)
+                g_bbox.append([int(x1), int(y1), int(x2), int(y2)])
+
+        precision, recall = evaluate_signal_proposal(text_proposals, g_bbox, 0.5)
+        print('precision', precision, 'recall', recall)
+        img_re = img_resized
+        for i in range(np.shape(np.array(g_bbox))[0]):
+            cv2.rectangle(img_re, (g_bbox[i][0], g_bbox[i][1]),
+                          (g_bbox[i][2], g_bbox[i][3]), (255, 0, 0), 1)
+        cv2.imwrite(os.path.join('./data/g_p_proposal', image_id+'.jpg'), img_re)
+        res = [recall, precision]
 
     timer.toc()
     print(('Detection took {:.3f}s for '
            '{:d} object proposals').format(timer.total_time, boxes.shape[0]))
 
-    return recall
+    return res
 
 if __name__ == '__main__':
     if os.path.exists("data/results/"):
@@ -174,10 +174,16 @@ if __name__ == '__main__':
                glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.jpg')) + \
                glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.JPG'))
     total_recall = 0
+    total_precision = 0
     for im_name in im_names:
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print(('Demo for {:s}'.format(im_name)))
-        recall = ctpn(sess, net, im_name)
-        total_recall += recall
-
-    print('average recall = ', float(total_recall)/len(im_names))
+        res = ctpn(sess, net, im_name)
+        total_recall += res[0]
+        if len(res)==2:
+            total_precision += res[1]
+    if total_precision > 0:
+        print('average precision = ', float(total_precision) / len(im_names))
+        print('average recall = ', float(total_recall) / len(im_names))
+    else:
+        print('average recall = ', float(total_recall)/len(im_names))
