@@ -1,0 +1,25 @@
+# pycharm
+.idea
+*.xml
+
+# model
+checkpoints
+*.pb
+*.npy
+*ckpt*
+
+# image
+*.png
+*.jpg
+*.JPG
+
+# txt result
+*.txt
+
+# 编译
+*.pyc
+__*
+
+# logs output
+events*
+*.pkl
