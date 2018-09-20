@@ -5,6 +5,7 @@ NET_NAME: VGGnet
 ANCHOR_SCALES: [16]
 NCLASSES: 2
 USE_GPU_NMS: True
+INPUT_NORMALIZATION: False
 TRAIN:
   restore: 0
   max_steps: 50000

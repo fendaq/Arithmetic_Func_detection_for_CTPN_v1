@@ -147,15 +147,25 @@ class SolverWrapper(object):
 
             # get one batch
             blobs = data_layer.forward()
+            if cfg.INPUT_NORMALIZATION:
+                feed_dict={
+                    self.net.data: (blobs['data']/255 -1),
+                    self.net.im_info: blobs['im_info'],
+                    self.net.keep_prob: 0.5,
+                    self.net.gt_boxes: blobs['gt_boxes'],
+                    self.net.gt_ishard: blobs['gt_ishard'],
+                    self.net.dontcare_areas: blobs['dontcare_areas']
+                }
+            else:
+                feed_dict = {
+                    self.net.data: blobs['data'],
+                    self.net.im_info: blobs['im_info'],
+                    self.net.keep_prob: 0.5,
+                    self.net.gt_boxes: blobs['gt_boxes'],
+                    self.net.gt_ishard: blobs['gt_ishard'],
+                    self.net.dontcare_areas: blobs['dontcare_areas']
+                }
 
-            feed_dict={
-                self.net.data: (blobs['data']/255 -1),
-                self.net.im_info: blobs['im_info'],
-                self.net.keep_prob: 0.5,
-                self.net.gt_boxes: blobs['gt_boxes'],
-                self.net.gt_ishard: blobs['gt_ishard'],
-                self.net.dontcare_areas: blobs['dontcare_areas']
-            }
             res_fetches=[]
             fetch_list = [total_loss,model_loss, rpn_cross_entropy, rpn_loss_box,
                           summary_op,

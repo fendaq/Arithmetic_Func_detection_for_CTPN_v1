@@ -15,6 +15,7 @@ __C.IS_RPN = True
 __C.ANCHOR_SCALES = [16]
 __C.NCLASSES = 2
 __C.USE_GPU_NMS = True
+__C.INPUT_NORMALIZATION = False
 # multiscale training and testing
 __C.IS_MULTISCALE = False
 __C.IS_EXTRAPOLATING = True

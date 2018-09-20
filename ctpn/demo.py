@@ -48,27 +48,20 @@ def resize_bbox(boxes, scale):
 
 def draw_boxes(img, image_name, boxes, scale):
     base_name = image_name.split('/')[-1]
-    with open('data/results/' + '{}.txt'.format(base_name.split('.')[0]), 'w') as f:
-        for box in boxes:
-            if box[4] >= 0.9:
-                color = (0, 255, 0)
-            elif box[4] >= 0.8:
-                color = (255, 0, 0)
-            else:
-                color = (0, 0, 255)
-            cv2.rectangle(img, (int(box[0]), int(box[1])),(int(box[2]), int(box[5])),color, 1)
-
-            # min_x = min(int(box[0] / scale), int(box[2] / scale), int(box[4] / scale), int(box[6] / scale))
-            # min_y = min(int(box[1] / scale), int(box[3] / scale), int(box[5] / scale), int(box[7] / scale))
-            # max_x = max(int(box[0] / scale), int(box[2] / scale), int(box[4] / scale), int(box[6] / scale))
-            # max_y = max(int(box[1] / scale), int(box[3] / scale), int(box[5] / scale), int(box[7] / scale))
-
-            line = ','.join([str(box[0]), str(box[1]), str(box[2]), str(box[5])]) + '\r\n'
-            f.write(line)
+    # with open('data/results/' + '{}.txt'.format(base_name.split('.')[0]), 'w') as f:
+    for box in boxes:
+        if box[4] >= 0.9:
+            color = (0, 255, 0)
+        elif box[4] >= 0.8:
+            color = (255, 0, 0)
+        else:
+            color = (0, 0, 255)
+        cv2.rectangle(img, (int(box[0]), int(box[1])),(int(box[2]), int(box[5])),color, 1)
+            # line = ','.join([str(box[0]), str(box[1]), str(box[2]), str(box[5])]) + '\r\n'
+            # f.write(line)
 
     img = cv2.resize(img, None, None, fx=1.0 / scale, fy=1.0 / scale, interpolation=cv2.INTER_LINEAR)
     cv2.imwrite(os.path.join("data/results", base_name), img)
-
 
 def ctpn(sess, net, image_name):
     timer = Timer()
@@ -91,6 +84,11 @@ def ctpn(sess, net, image_name):
     # 原图像的绝对bbox位置
     original_bbox, scores = resize_bbox(boxes, scale)
 
+    base_name = image_name.split('/')[-1]
+    with open('data/results/' + '{}.txt'.format(base_name.split('.')[0]), 'w') as f:
+        for bbox in original_bbox:
+            line = ','.join([str(bbox[0]), str(bbox[1]), str(bbox[2]), str(bbox[3])]) + '\r\n'
+            f.write(line)
 
     image_id = image_name.split('/')[-1]
     image_id = image_id.split('.')[0]
