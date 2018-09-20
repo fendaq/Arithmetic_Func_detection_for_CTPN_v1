@@ -13,7 +13,7 @@ LEFT_RIGHT_X1_FLOAT_PIXEL = 10
 class BboxConnector(object):
     def __init__(self, bbox_list):
 
-        self.bboxes = np.array(bbox_list)
+        self.bboxes = np.array(bbox_list,dtype=np.int)
         # self.img = img
         # self.img_width = img.shape[1]
         # self.img_height = img.shape[0]
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         c = BboxConnector(bbox)
         connected_bbox_list = c.start()
         for i in connected_bbox_list:
-            cv2.rectangle(img, (int(i[0]),int(i[1])),(int(i[2]),int(i[3])),(255,0,0),2)
+            cv2.rectangle(img, (i[0],i[1]),(i[2],i[3]),(255,0,0),2)
 
         cv2.imwrite(img_name, img)
 

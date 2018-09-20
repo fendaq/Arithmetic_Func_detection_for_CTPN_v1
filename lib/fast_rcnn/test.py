@@ -67,3 +67,20 @@ def test_ctpn(sess, net, im, boxes=None):
         boxes = rois[:, 1:5] / im_scales[0]
 
     return scores,boxes
+
+def run(net,im):
+    blobs, im_scales = _get_blobs(im, None)
+
+    if cfg.TEST.HAS_RPN:
+        if cfg.INPUT_NORMALIZATION:
+            im_blob = blobs['data'] / 255 - 1
+        else:
+            im_blob = blobs['data']
+        blobs['im_info'] = np.array(
+            [[im_blob.shape[1], im_blob.shape[2], im_scales[0]]],
+            dtype=np.float32)
+    # forward pass
+    run_list = [net.get_output('rois')[0], net.get_output('rpn_targets')]
+    feed_dict = {net.data: blobs['data'], net.im_info: blobs['im_info'], net.keep_prob: 1.0}
+
+    return run_list, feed_dict, im_scales
