@@ -149,7 +149,7 @@ class SolverWrapper(object):
             blobs = data_layer.forward()
 
             feed_dict={
-                self.net.data: blobs['data'],
+                self.net.data: (blobs['data']/255 -1),
                 self.net.im_info: blobs['im_info'],
                 self.net.keep_prob: 0.5,
                 self.net.gt_boxes: blobs['gt_boxes'],
