@@ -18,8 +18,11 @@ from lib.text_connector.detectors import TextDetector
 from lib.text_connector.text_connect_cfg import Config as TextLineCfg
 from lib.evaluation.evaluate_network import evaluate_signal_proposal,evaluate_signal_bbox
 from lib.prepare_training_data.parse_tal_xml import ParseXml
+from lib.text_connector.bbox_connector import BboxConnector
 
 
+is_evaluate_bbox = False
+is_evaluate_proposal = False
 
 
 def resize_im(im, scale, max_scale=None):
@@ -71,6 +74,7 @@ def ctpn(sess, net, image_name):
     # print('111', img.shape)
     #　将图像进行resize并返回其缩放大小
     img_resized, scale = resize_im(img, scale=TextLineCfg.SCALE, max_scale=TextLineCfg.MAX_SCALE)
+    print(scale)
     # print('222', img.shape)
     # 送入网络得到1000个得分,1000个bbox
     scores, boxes = test_ctpn(sess, net, img_resized)
@@ -81,19 +85,25 @@ def ctpn(sess, net, image_name):
     text_proposals, scores, boxes = textdetector.detect(boxes, scores[:, np.newaxis], img_resized.shape[:2])
     draw_boxes(img_resized, image_name, boxes, scale)
 
+
     # 原图像的绝对bbox位置
     original_bbox, scores = resize_bbox(boxes, scale)
+    c = BboxConnector(original_bbox)
+    connected_bbox = c.start()
 
     base_name = image_name.split('/')[-1]
     with open('data/results/' + '{}.txt'.format(base_name.split('.')[0]), 'w') as f:
-        for bbox in original_bbox:
+        img_cp = img.copy()
+        for bbox in connected_bbox:
             line = ','.join([str(bbox[0]), str(bbox[1]), str(bbox[2]), str(bbox[3])]) + '\r\n'
             f.write(line)
+            cv2.rectangle(img_cp, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
 
     image_id = image_name.split('/')[-1]
     image_id = image_id.split('.')[0]
+    cv2.imwrite(os.path.join('./data/results/', image_name), img_cp)
+    res = None
 
-    is_evaluate_bbox = True
     if is_evaluate_bbox:
         test_label_dir = './data/test_xml'
         p = ParseXml(os.path.join(test_label_dir, image_id+'.xml'), rect=True)
@@ -111,12 +121,8 @@ def ctpn(sess, net, image_name):
         for i in range(len(g_bbox_list)):
             cv2.rectangle(img_re, (g_bbox_list[i][0], g_bbox_list[i][1]),
                           (g_bbox_list[i][2], g_bbox_list[i][3]), (255, 0, 0), 1)
-        # cv2.imshow('333', img_re)
         cv2.imwrite(os.path.join('./data/g_p_bbox', 'bb_'+image_id + '.jpg'), img_re)
-        # cv2.waitKey()
-
-    is_evaluate_proposal = False
-    if is_evaluate_proposal:
+    elif is_evaluate_proposal:
         test_label_dir = './data/test_label'
         g_bbox = []
         with open(os.path.join(test_label_dir, image_id+'.txt'), 'r') as f:
@@ -177,11 +183,13 @@ if __name__ == '__main__':
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print(('Demo for {:s}'.format(im_name)))
         res = ctpn(sess, net, im_name)
-        total_recall += res[0]
-        if len(res)==2:
-            total_precision += res[1]
-    if total_precision > 0:
-        print('average precision = ', float(total_precision) / len(im_names))
-        print('average recall = ', float(total_recall) / len(im_names))
-    else:
-        print('average recall = ', float(total_recall)/len(im_names))
+        if is_evaluate_bbox is True or is_evaluate_proposal is True:
+            total_recall += res[0]
+            if len(res)==2:
+                total_precision += res[1]
+    if is_evaluate_bbox is False or is_evaluate_proposal is False:
+        if total_precision > 0:
+            print('average precision = ', float(total_precision) / len(im_names))
+            print('average recall = ', float(total_recall) / len(im_names))
+        else:
+            print('average recall = ', float(total_recall)/len(im_names))

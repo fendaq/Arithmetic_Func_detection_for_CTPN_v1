@@ -68,32 +68,34 @@ def run_ctpn(img):
     # load model
     print(('Loading network {:s}... '.format("VGGnet_test")), end=' ')
     # 　将图像进行resize并返回其缩放大小
-    img_resized, scale = resize_im(img, scale=TextLineCfg.SCALE, max_scale=TextLineCfg.MAX_SCALE)
+    img_resized, bbox_scale = resize_im(img, scale=TextLineCfg.SCALE, max_scale=TextLineCfg.MAX_SCALE)
+    # print(scale)
     run_list, feed_dict, im_scales = run(net, img_resized)
 
-    return config, run_list, feed_dict, img_resized.shape, im_scales
+    return config, run_list, feed_dict, img_resized.shape, im_scales, bbox_scale
 
-def decode_ctpn_output(ctpn_output, im_scales, img_resized_shape):
+def decode_ctpn_output(ctpn_output, im_scales, bbox_scale, img_resized_shape):
     rois = ctpn_output[0]
 
     scores = rois[:, 0]
     if cfg.TEST.HAS_RPN:
         assert len(im_scales) == 1, "Only single-image batch implemented"
+        # print(im_scales[0])
         boxes = rois[:, 1:5] / im_scales[0]
 
     textdetector = TextDetector()
     # 得到是resize图像后的bbox
     text_proposals, scores, resized_boxes = textdetector.detect(boxes, scores[:, np.newaxis], img_resized_shape[:2])
     # 原图像的绝对bbox位置
-    original_bbox, scores = resize_bbox(resized_boxes, im_scales)
+    original_bbox, scores = resize_bbox(resized_boxes, bbox_scale)
     bbox_connector = BboxConnector(original_bbox)
     res_bbox = bbox_connector.start()
     return res_bbox
 
 if __name__ == "__main__":
-    img = cv2.imread('/home/tony/ocr/Arithmetic_Func_detection_for_CTPN_v1/data/demo/IMG_5026.JPG')
+    img = cv2.imread('/home/tony/ocr/Arithmetic_Func_detection_for_CTPN_v1/data/demo/1.JPG')
 
-    config, run_list, feed_dict, img_resized_shape, im_scales = run_ctpn(img)
+    config, run_list, feed_dict, img_resized_shape, im_scales, bbox_scale = run_ctpn(img)
 
     sess = tf.Session(config=config)
     saver = tf.train.Saver()
@@ -108,7 +110,11 @@ if __name__ == "__main__":
 
     out_put = sess.run(run_list, feed_dict)
 
-    res_output = decode_ctpn_output(out_put, im_scales, img_resized_shape)
-    print(res_output)
+    res_output = decode_ctpn_output(out_put, im_scales, bbox_scale, img_resized_shape)
+    # print(res_output)
+    for bbox in res_output:
+        cv2.rectangle(img, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255,0,0), 2)
+
+    cv2.imwrite('dwad.jpg',img)
 
 
