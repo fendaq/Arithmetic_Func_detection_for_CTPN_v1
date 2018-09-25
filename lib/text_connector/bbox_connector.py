@@ -4,11 +4,11 @@ import cv2
 import os
 
 # 高度上下浮动像素值
-HEIGHT_FLOAT_PIXEL = 20
+HEIGHT_FLOAT_PIXEL = 25
 # left bbox x2 与right bbox x1 差值的绝对值
 WIDTH_FLOAT_PIXEL = 20
 # left bbox x1 与right bbox x1 差值的绝对值
-LEFT_RIGHT_X1_FLOAT_PIXEL = 10
+LEFT_RIGHT_X1_FLOAT_PIXEL = 20
 
 class BboxConnector(object):
     def __init__(self, bbox_list):

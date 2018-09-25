@@ -74,7 +74,7 @@ def ctpn(sess, net, image_name):
     # print('111', img.shape)
     #　将图像进行resize并返回其缩放大小
     img_resized, scale = resize_im(img, scale=TextLineCfg.SCALE, max_scale=TextLineCfg.MAX_SCALE)
-    print(scale)
+    # print(scale)
     # print('222', img.shape)
     # 送入网络得到1000个得分,1000个bbox
     scores, boxes = test_ctpn(sess, net, img_resized)
@@ -85,7 +85,6 @@ def ctpn(sess, net, image_name):
     text_proposals, scores, boxes = textdetector.detect(boxes, scores[:, np.newaxis], img_resized.shape[:2])
     draw_boxes(img_resized, image_name, boxes, scale)
 
-
     # 原图像的绝对bbox位置
     original_bbox, scores = resize_bbox(boxes, scale)
     c = BboxConnector(original_bbox)
@@ -93,15 +92,16 @@ def ctpn(sess, net, image_name):
 
     base_name = image_name.split('/')[-1]
     with open('data/results/' + '{}.txt'.format(base_name.split('.')[0]), 'w') as f:
-        img_cp = img.copy()
+        img_cp = img
         for bbox in connected_bbox:
             line = ','.join([str(bbox[0]), str(bbox[1]), str(bbox[2]), str(bbox[3])]) + '\r\n'
             f.write(line)
-            cv2.rectangle(img_cp, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
+            cv2.rectangle(img_cp, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
 
     image_id = image_name.split('/')[-1]
     image_id = image_id.split('.')[0]
-    cv2.imwrite(os.path.join('./data/results/', image_name), img_cp)
+
+    cv2.imwrite(os.path.join('./data/results', image_id + '_c' + '.jpg'), img_cp)
     res = None
 
     if is_evaluate_bbox:
